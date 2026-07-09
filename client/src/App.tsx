@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect} from 'react'
 import './App.css'
 
 function App() {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const [habitList, setHabitList] = useState<any[]>([])
   const [habitName, setHabitName] = useState('')
   const [frequency, setFrequency] = useState('daily')
   const [description, setDescription] = useState('')
@@ -14,7 +15,17 @@ function App() {
   const openDialog = () => {
     dialogRef.current?.showModal()
   }
-  
+
+  const loadHabits = async () => {
+    await fetch('http://127.0.0.1:3000/')
+        .then(res => res.json())
+        .then(data => setHabitList(data))
+        .catch(err => console.error('Error fetching habits:', err));
+  };
+  useEffect(() => {
+    loadHabits()
+  }, [])
+
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     await fetch('http://127.0.0.1:3000/habits', {
@@ -23,7 +34,7 @@ function App() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        name: habitName,
+        habitName: habitName,
         frequency: frequency,
         description: description,
         startDate: startDate,
@@ -31,12 +42,26 @@ function App() {
         notifications: notifications,
         motivationalMessage: motivationalMessage
       }),
-    }).then(res => res.text()).then(data => console.log(data)).catch(err => console.error(err));
+    }).then(res => res.text()).then(data => {console.log(data); loadHabits()}).catch(err => console.error(err));
+    
     dialogRef.current?.close()
   }
 
   return (
     <>
+      <ul>
+        {habitList.map((habit, index) => (
+          <li key={index}>
+            <h2>{habit.habitName}</h2>
+            <p>Frequency: {habit.frequency}</p>
+            <p>Description: {habit.description}</p>
+            <p>Start Date: {habit.startDate}</p>
+            <p>Selected Days: {habit.selectedDays.join(', ')}</p>
+            <p>Notifications: {habit.notifications ? 'Yes' : 'No'}</p>
+            <p>Motivational Message: {habit.motivationalMessage}</p>
+          </li>
+        ))}
+      </ul>
       <button onClick={openDialog}>
         Start a new habit!
       </button>
@@ -47,9 +72,10 @@ function App() {
             type='text' 
             placeholder='Habit Name' 
             value={habitName}
+            required={true}
             onChange={(e) => setHabitName(e.target.value)}
           />
-          <select name='Frequency' value={frequency} onChange={(e) => setFrequency(e.target.value)}>
+          <select name='Frequency' value={frequency} onChange={(e) => setFrequency(e.target.value)} required={true}>
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
@@ -59,12 +85,14 @@ function App() {
             placeholder="Description" 
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            required={true}
           />
           <input 
             type="date" 
             placeholder="Start Date" 
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
+            required={true}
           />
           <fieldset>
             <legend>Select Days</legend>
@@ -143,7 +171,7 @@ function App() {
             <input type="checkbox" name="notifications" checked={notifications} onChange={(e) => setNotifications(e.target.checked)} />
             Send text notifications
           </label>
-          <input type="text" placeholder="Motivational message" value={motivationalMessage} onChange={(e) => setMotivationalMessage(e.target.value)} />
+          <input type="text" placeholder="Motivational message" value={motivationalMessage} required={true} onChange={(e) => setMotivationalMessage(e.target.value)} />
           <button type="submit">Create Habit</button>
         </form>
       </dialog>
