@@ -25,7 +25,7 @@ function App() {
         ))}
       </div>
 
-      <button onClick={openDialog}>
+      <button id="newButton" onClick={openDialog}>
         Start a new habit!
       </button>
       <NewHabitForm dialogRef={dialogRef} loadHabits={loadHabits} id=''/>
